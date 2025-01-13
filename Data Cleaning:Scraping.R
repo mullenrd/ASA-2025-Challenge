@@ -5,6 +5,8 @@ library(httr)
 library(jsonlite)
 library(ggplot2)
 library(rvest)
+library(RSelenium)
+
 #Intitial Dataset
 #swing<-read_feather("/Users/reesemullen/Desktop/Statistical Practice/ASA-2025-Challenge/OneDrive_1_10-12-2024/statcast_pitch_swing_data_20240402_20240630.arrow")
 
@@ -168,30 +170,15 @@ ggplot(data = swing1, aes(x = bat_speed, color = factor(batter))) +
   guides(color = "none") +  # Remove the color legend
   theme_minimal()
 
+
+
+
 #Find Player's Team
 swing1 <- swing1 %>%
   mutate(
     bat_team = ifelse(inning_topbot == "top", away_team, home_team)
   )
 
-
-ggplot(data = swing1_subset, aes(x = bat_speed, color = factor(bat_team))) +
-  geom_density() +
-  labs(title = "Distribution of Swing Speeds by Batter",x = "Swing Speed (mph)",y = "Density") +
-  guides(color = "none") +  
-  theme_minimal()
-
-#Team Level stats
-swing_summary <- swing1 %>%
-  filter(!is.na(bat_speed)) %>%
-  group_by(bat_team) %>%
-  summarise(
-    mean_swing_speed = mean(bat_speed),
-    sd_swing_speed = sd(bat_speed),
-    count = n()
-  )
-
-summary(average_swing_speed)
 #Add Centered stats back to dataset
 swing1 <- swing1 %>%
   left_join(
@@ -199,8 +186,6 @@ swing1 <- swing1 %>%
       dplyr::select(batter, height_centered, weight_centered, average_swing_speed),
     by = "batter"
   )
-
-
 # Subset the dataset
 swing1_subset <- swing1 %>%
   dplyr::select(
@@ -220,35 +205,20 @@ swing1_clean <- swing1_subset %>%
 write.csv(swing1_clean, "Bat Speed Cleaned.csv", row.names = FALSE)
 
 
+ggplot(data = swing1_subset, aes(x = bat_speed, color = factor(bat_team))) +
+  geom_density() +
+  labs(title = "Distribution of Swing Speeds by Batter",x = "Swing Speed (mph)",y = "Density") +
+  guides(color = "none") +  
+  theme_minimal()
 
+#Team Level stats
+swing_summary <- swing1 %>%
+  filter(!is.na(bat_speed)) %>%
+  group_by(bat_team) %>%
+  summarise(
+    mean_swing_speed = mean(bat_speed),
+    sd_swing_speed = sd(bat_speed),
+    count = n()
+  )
 
-#For ASA Challenge
-# Specify the URL
-url1 <- "https://www.fangraphs.com/roster-resource/injury-report?season=2024&groupby=all&timeframe=all&injury="
-
-# Read the webpage content
-webpage <- read_html(url1)
-
-# Extract all tables from the webpage
-all_tables <- webpage %>%
-  html_nodes("table")
-
-# Check the number of tables found
-length(all_tables)
-
-# Extract the last (bottom) table
-bottom_table <- all_tables[[length(all_tables)]] %>% 
-  html_table(fill = TRUE)
-
-# Inspect the data
-head(bottom_table)
-
-# Clean up column names if necessary
-bottom_table <- bottom_table %>%
-  rename_with(~make.names(.x, unique = TRUE))
-
-# View the first few rows
-print(bottom_table)
-
-all_tables <- webpage %>%
-  html_nodes("div.injury-section table")
+summary(average_swing_speed)
