@@ -161,10 +161,10 @@ ggplot(il_days_summary, aes(x = reorder(Category, Median_Days_Out))) +
     fill = "Metric"
   )
 
-# Classify injuries into Reaction, Built-Up, or Mixed
 position_player_table <- position_player_table %>%
   mutate(
     Injury_Type = case_when(
+      # Reaction injuries
       `Injury / Surgery` %in% c(
         "Fractured ankle", "Fractured forearm", "Fractured hand", 
         "Fractured pisiform bone (right wrist)", "Fractured finger (right ring)", 
@@ -172,30 +172,57 @@ position_player_table <- position_player_table %>%
         "Fractured shin", "Fractured toe", "Fractured hamate", 
         "Torn Achilles' tendon", "Torn rib cartilage", "Torn knee meniscus", 
         "Sprained ankle", "Sprained knee", "Sprained shoulder (AC joint)", 
-        "Sprained thumb", "Concussion", "Rib contusion", "Thumb contusion"
+        "Sprained thumb", "Concussion", "Rib contusion", "Thumb contusion",
+        "Knee surgery", "Knee surgery (torn ACL)", "Knee surgery (torn meniscus)", 
+        "Sprained wrist", "Fractured pinky (left)", "Fractured thumb (left)",
+        "Fractured thumb (right)", "Fractured wrist (right)", 
+        "Fractured wrist", "Fractured heel", "Fractured finger (left middle)",
+        "Fractured hand (right pinkie)", "Fractured hand (right)", "Medical procedure", 
+        "Non-displaced rib fractures", "Viral illness", "Influenza", 
+        "Stomach flu", "Viral infection", "Fractured leg (fibula)", 
+        "Fractured forearm (non-displaced)", "Fractured rib (non-displaced)",
+        "Sprained elbow (non-throwing)", "Fielding collision", "Fractured finger (right middle)",
+        "Knee contusion", "Sprained lower back", "Sprained shoulder", "Calf infection", 
+        "Costochondral cartilage injury", "Foot infection", "Forearm surgery (fracture)",
+        "Fractured foot (non-displaced)", "Kidney infection", "Knee bone bruise", 
+        "Knee surgery (lateral meniscectomy)", "Knee surgery (meniscectomy)", "Knee surgery (meniscus)",
+        "Non-displaced wrist fracture", "Shoulder surgery", "Shoulder surgery (fractured glenoid)",
+        "Thumb surgery (torn ligament)", "Wrist bone bruise (left)"
       ) ~ "Reaction",
       
+      # Built-Up injuries
       `Injury / Surgery` %in% c(
         "Tommy John surgery", "Shoulder surgery (labrum repair)", 
         "Shoulder surgery (rotator cuff)", "Strained rotator cuff", 
         "Herniated disc in back", "Plantar fasciitis", "Hip impingement", 
         "Wrist tendinitis", "Knee inflammation", "Wrist inflammation", 
         "Achilles tendinitis", "Biceps tendinitis", "Stress fracture (lumbar spine)", 
-        "Hip surgery (labrum repair)", "Hip surgery (resurfacing procedure)", 
+        "Hip surgery (labrum repair)", "Hip surgery (surfacing procedure)", 
         "Arthroscopic knee surgery", "Core muscle surgery", "Sports hernia surgery", 
-        "Back inflammation (lumbar spine)", "Shoulder impingement"
+        "Back inflammation (lumbar spine)", "Shoulder impingement", "Strained calf", 
+        "Strained hamstring", "Strained quad", "Strained groin", "Strained shoulder", 
+        "Strained lower back", "Strained oblique", "Back discomfort", 
+        "Shoulder discomfort", "Thumb discomfort", "Hip discomfort", 
+        "Lower back tightness", "Back inflammation", "Back spasms", 
+        "Lower back spasms", "Lower back inflammation", "Strained back", 
+        "Strained lat", "Knee discomfort", "Knee tendinitis", "Neck inflammation",
+        "Arthroscopic wrist surgery", "Rib cage inflammation", "Hand inflammation (left)",
+        "Strained hip flexor", "Strained hand", "Strained forearm", 
+        "Shoulder surgery (torn labrum)", "Wrist surgery", "Elbow/Flexor tendon surgery",
+        "Elbow surgery (internal brace)", "Hip flexor inflammation", 
+        "Hip inflammation", "Spine disc injury", "Core muscle strain", 
+        "Hip surgery (labrum repair)", "Torn thumb ligament", "Thumb surgery (ligament repair)",
+        "Wrist surgery (ulnar styloid fracture)", "Bacterial infection", 
+        "Femoral stress reaction", "Tenex procedure (right knee)", "Strained hip", "Plantar fascitis", 
+        "Ankle procedure (bone spur removal)", "Arthroscopic hip surgery", "Back surgery",
+        "Foot discomfort (partially torn plantar fascia)", "Forearm tightness", "Shoulder inflammation"
       ) ~ "Built-Up",
       
-      `Injury / Surgery` %in% c(
-        "Strained calf", "Strained hamstring", "Strained quad", 
-        "Strained groin", "Strained shoulder", "Strained lower back", 
-        "Strained oblique", "Back discomfort", "Shoulder discomfort", 
-        "Thumb discomfort", "Hip discomfort"
-      ) ~ "Mixed",
-      
-      TRUE ~ "Unknown"  # Handle unexpected values
+      # Unknown category
+      TRUE ~ "Unknown"
     )
   )
+
 
 # Count injuries by type
 injury_summary <- position_player_table %>%
@@ -348,7 +375,7 @@ pre_post_injury_wide <- pre_post_injury_results %>%
     ),
     names_prefix = "Injury_"
   ) %>%
-  select(-contains("Injury / Surgery Date"))  # Exclude date column
+  dplyr::select(-contains("Injury / Surgery Date"))  # Exclude date column
 
 # Step 2: Join with `average_swing_speed`
 average_swing_speed<- average_swing_speed %>%
@@ -395,7 +422,7 @@ calculate_inzone_contact <- function(swing_data, injury_data, injury_cols) {
     # Join swing data with injury data for this injury
     joined_data <- swing_data %>%
       inner_join(
-        injury_data %>% select(Name_Last_First, !!rlang::sym(injury_col)),
+        injury_data %>% dplyr::select(Name_Last_First, !!rlang::sym(injury_col)),
         by = "Name_Last_First",
         relationship = "many-to-many"  # Specify the relationship
       )
@@ -449,6 +476,10 @@ calculate_inzone_contact <- function(swing_data, injury_data, injury_cols) {
   return(final_results)
 }
 
+
+
+
+
 # Define the list of injury columns in `average_swing_speed`
 injury_cols <- c("Injury_Date_1", "Injury_Date_2", "Injury_Date_3")
 
@@ -456,8 +487,9 @@ injury_cols <- c("Injury_Date_1", "Injury_Date_2", "Injury_Date_3")
 inzone_contact_results <- calculate_inzone_contact(swing1, average_swing_speed, injury_cols)
 
 # Join with `average_swing_speed`
-average_swing_speed_updated <- average_swing_speed %>%
+average_swing_speed <- average_swing_speed %>%
   left_join(inzone_contact_results, by = "Name_Last_First")
 
 # View the updated dataset
-print(average_swing_speed_updated)
+print(average_swing_speed)
+

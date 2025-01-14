@@ -31,6 +31,15 @@ swing1 <- swing1 %>%
     )
   )
 
+swing1 <- swing1 %>%
+  mutate(
+    pitch_type_basic = case_when(
+      pitch_type %in% c("FF", "FC", "SI") ~ "Fastball",
+      pitch_type %in% c("CU", "SL", "SV", "KC", "ST") ~ "Breaking Ball",
+      pitch_type %in% c("CH", "EP", "FO", "FS", "SC", "KN", "", "FA", "CS") ~ "Offspeed",
+      TRUE ~ "Unknown"  # Catch unexpected pitch types
+    )
+  )
 #Average Swing speed
 average_swing_speed <- swing1 %>%
   group_by(batter) %>%
@@ -227,7 +236,8 @@ swing1 <- swing1 %>%
   )
 # Join the centered columns from average_swing_speed to swing1
 swing1 <- swing1 %>%
-  left_join(average_swing_speed %>% select(batter, height_centered, weight_centered, age_centered), by = "batter")
+  left_join(average_swing_speed %>% 
+              dplyr::select(batter, height_centered, weight_centered, age_centered), by = "batter")
 
 
 # Subset the dataset
@@ -245,9 +255,9 @@ swing1_subset <- swing1 %>%
 swing1_clean <- swing1_subset %>%
   filter(!is.na(bat_speed))
 
-# Save as a CSV
-write.csv(swing1_clean, "Bat Speed Cleaned.csv", row.names = FALSE)
 
+swing1_swing<-swing1 %>%
+  filter(!is.na(bat_speed))
 
 ggplot(data = swing1_subset, aes(x = bat_speed, color = factor(bat_team))) +
   geom_density() +
@@ -297,8 +307,8 @@ swing1 <- swing1 %>%
 average_swing_speed <- average_swing_speed %>%
   mutate(Name_Last_First = str_replace(player_name, "(\\w+)\\s(\\w+)", "\\2, \\1"))
 
-swing1 <- swing1 %>%
-  dplyr::rename(Name_Last_First = player_name)
+swing1<- swing1 %>%
+  mutate(Name_Last_First = player_name)
 
 # Summarize baserunning distance for each player
 player_baserunning_distance <- swing1 %>%
@@ -311,8 +321,6 @@ average_swing_speed <- average_swing_speed %>%
 
 # View the updated dataset
 head(average_swing_speed)
-head(swing1$des)
-
 
 
 ###Fielding Stats
@@ -387,12 +395,19 @@ fielding_stats_df <- bind_rows(fielding_stats_list)
 # View the resulting data frame
 print(fielding_stats_df)
 
-# Join fielding_stats_df to average_swing_speed_updated on `batter`
-average_swing_speed_updated <- average_swing_speed_updated %>%
+# Join fielding_stats_df to average_swing_speed on `batter`
+average_swing_speed <- average_swing_speed %>%
   left_join(
-    fielding_stats_df %>% select(-fullName),  # Exclude fullName column from fielding_stats_df
+    fielding_stats_df %>% dplyr::select(-fullName),  # Exclude fullName column from fielding_stats_df
     by = "batter"
   )
 
 # View the resulting dataset
-print(average_swing_speed_final)
+print(average_swing_speed)
+
+average_swing_speed <- average_swing_speed %>%
+  mutate(rf_innings = weighted_range_factor*total_innings)
+
+average_swing_speed <- average_swing_speed %>%
+  distinct(batter, .keep_all = TRUE)
+
