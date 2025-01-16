@@ -477,7 +477,7 @@ calculate_inzone_contact <- function(swing_data, injury_data, injury_cols) {
 }
 
 
-
+ 
 
 
 # Define the list of injury columns in `average_swing_speed`
